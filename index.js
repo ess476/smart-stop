@@ -72,7 +72,9 @@ function run()
 {
 
 	checkcall = esprima.parse('async function func() { await _check(); } ').body[0].body.body[0];
-	parsed = esprima.parse($('#code').val(), {tolerant: true}, function (node, meta) {
+	
+	let code = "async function _stub() { " + $('#code').val() + "} ";
+	parsed = esprima.parse(code, {tolerant: true}, function (node, meta) {
 		if (node.type == "FunctionDeclaration")
 		{
 			node.async = true;
@@ -95,10 +97,11 @@ function run()
 	
 	
 
-	let code = escodegen.generate(parsed);
+	code = escodegen.generate(parsed);
 
-	code = "async function _stub() { " +  code + "} setTimeout(_stub, 0);";
-	code = code.replace('await,', 'await');
+
+	//code = code.replace('await,', 'await');
+	code += "setTimeout(_stub, 0);"
 	console.log(code);
 	eval(code);
 }
