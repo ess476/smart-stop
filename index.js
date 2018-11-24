@@ -48,12 +48,12 @@ async function _check()
 
 
 async function fapply(f, ...args) {
-	await check();
+	await _check();
 	return f(...args);
 }
 
 async function sum(x, acc) {
-	await check();
+	await _check();
 	if (x === 0) {
 		return acc;
 	} else {
@@ -64,7 +64,7 @@ async function sum(x, acc) {
 function run()
 {
 
-	checkcall = esprima.parse('async function func() { await _check(); } ').body[0].body.body[0];
+	_checkcall = esprima.parse('async function func() { await _check(); } ').body[0].body.body[0];
 	parsed = esprima.parse($('#code').val(), {tolerant: true}, function (node, meta) {
 		if (node.type == "FunctionDeclaration")
 		{
