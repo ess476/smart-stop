@@ -64,7 +64,7 @@ async function sum(x, acc) {
 function run()
 {
 
-	_checkcall = esprima.parse('async function func() { await _check(); } ').body[0].body.body[0];
+	checkcall = esprima.parse('async function func() { await _check(); } ').body[0].body.body[0];
 	parsed = esprima.parse($('#code').val(), {tolerant: true}, function (node, meta) {
 		if (node.type == "FunctionDeclaration")
 		{
