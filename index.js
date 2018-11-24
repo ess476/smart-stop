@@ -3,7 +3,6 @@ var start = 0
 var end = 0
 
 var depth = 0;
-var cond_depth = 0;
 var stopped = false;
 
 function resumePressed()
@@ -66,7 +65,6 @@ function run()
 {
 
 	checkcall = esprima.parse('async function func() { await check(); } ').body[0].body.body[0];
-	console.log(checkcall);
 	parsed = esprima.parse($('#code').val(), {tolerant: true}, function (node, meta) {
 		if (node.type == "FunctionDeclaration")
 		{
@@ -81,10 +79,6 @@ function run()
 
 			delete node["arguments"];
 			delete node["callee"];
-
-			console.log(node);
-		} else {
-			//console.log(node);
 		}
 	});
 
@@ -110,15 +104,7 @@ $(document).ready(function()
 
 	$('#run').click(async function()
 	{
-		start = performance.now();
-
 		run();
-
-		end = performance.now();
-		
-		console.log('time: ' + (end - start));
-
-		//inf();
 	});
 });
 
