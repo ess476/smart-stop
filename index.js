@@ -86,6 +86,9 @@ function run()
 
 			delete node["arguments"];
 			delete node["callee"];
+		} else if (node.type == "WhileStatement" || node.type == "DoWhileStatement")
+		{
+			node.body.body.unshift(checkcall);
 		}
 	});
 
