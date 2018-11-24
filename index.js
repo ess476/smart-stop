@@ -20,7 +20,7 @@ function depthdec()
 	depth -= 1;
 }
 
-async function check()
+async function _check()
 {
 	if (stopped)
 	{
@@ -64,7 +64,7 @@ async function sum(x, acc) {
 function run()
 {
 
-	checkcall = esprima.parse('async function func() { await check(); } ').body[0].body.body[0];
+	checkcall = esprima.parse('async function func() { await _check(); } ').body[0].body.body[0];
 	parsed = esprima.parse($('#code').val(), {tolerant: true}, function (node, meta) {
 		if (node.type == "FunctionDeclaration")
 		{
