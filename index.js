@@ -5,11 +5,18 @@ var end = 0
 var depth = 0;
 var stopped = false;
 
-function resumePressed()
+function controlPressed()
 {
 	return new Promise((resolve, reject) => {
-		$("#resume").click(function(){
+		$(".control").click(function(){
+
 			stopped = false;
+
+			if (this.id == 'run')
+			{
+				throw 'cleaning up';
+			}
+
 			resolve();
 		});
 	});
@@ -24,7 +31,7 @@ async function _check()
 {
 	if (stopped)
 	{
-		await resumePressed();
+		await controlPressed();
 
 		return new Promise((resolve, reject) => {
 			setTimeout(resolve, 0);
@@ -32,7 +39,7 @@ async function _check()
 
 	} else {
 
-		if (depth <= 8000)
+		if (depth < 200)
 		{
 			depth += 1;
 			return;
@@ -104,7 +111,12 @@ $(document).ready(function()
 
 	$('#run').click(async function()
 	{
-		run();
+		try {
+			run();
+		} catch(e)
+		{
+			console.log(e);
+		}
 	});
 });
 
