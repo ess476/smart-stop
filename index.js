@@ -47,9 +47,9 @@ async function check()
 
 
 
-async function fapply(f, ...args) {
+async function fapply(f) {
 	await check();
-	return f(...args);
+	return f.apply(null, arguments.slice(1))
 }
 
 async function sum(x, acc) {
