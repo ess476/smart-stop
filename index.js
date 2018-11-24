@@ -17,6 +17,7 @@ function controlPressed()
 				throw 'cleaning up';
 			}
 
+			$(".control").unbind('click');
 			resolve();
 		});
 	});
@@ -90,7 +91,10 @@ function run()
 			delete node["callee"];
 		} else if (node.type == "WhileStatement" || node.type == "DoWhileStatement")
 		{
-			node.body.body.unshift(checkcall);
+			if (node.body.body != undefined)
+			{
+				node.body.body.unshift(checkcall);
+			}
 		}
 	});
 
@@ -117,6 +121,7 @@ $(document).ready(function()
 
 	$('#run').click(async function()
 	{
+		stopped = false;
 		try {
 			run();
 		} catch(e)
