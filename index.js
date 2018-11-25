@@ -12,13 +12,8 @@ function controlPressed()
 
 			stopped = false;
 
-			if (this.id == 'run')
-			{
-				throw 'cleaning up';
-			}
-
-			$(".control").unbind('click');
-			resolve();
+			$(".control").unbind('click', this);
+			resolve((this.id == 'run'));
 		});
 	});
 }
@@ -32,7 +27,12 @@ async function _check()
 {
 	if (stopped)
 	{
-		await controlPressed();
+		killed = await controlPressed();
+		if (killed)
+		{
+			throw 'cleanup';
+		}
+
 
 		return new Promise((resolve, reject) => {
 			setTimeout(resolve, 0);
@@ -130,4 +130,3 @@ $(document).ready(function()
 		}
 	});
 });
-
