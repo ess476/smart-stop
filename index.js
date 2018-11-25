@@ -31,6 +31,7 @@ class StackCtx
 	signal(sig)
 	{
 		// We can't accept signals in an idle state.
+		console.log(this.state);
 		if (this.state == State.IDLE)
 		{
 			return;
@@ -115,6 +116,8 @@ class StackCtx
 			console.log('already running, terminating current program');
 			this.signal(Signal.TERMINATE);
 
+			console.log('test');
+
 			// Allow the stack to clear
 			await new Promise(function(resolve) {
 				setTimeout(resolve, 0);
@@ -122,6 +125,7 @@ class StackCtx
 		}
 
 		this.state = State.RUNNING;
+		this.pendingSignal = false;
 
 		let checkcall = esprima.parse('async function func() { await _ctx.check(); } ').body[0].body.body[0];
 	
@@ -158,7 +162,6 @@ class StackCtx
 		let _this = this;
 		
 		await eval(code);
-		_this.terminate(false);
 	}
 };
 
