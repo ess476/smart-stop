@@ -1,132 +1,181 @@
+const State = Object.freeze({
+    IDLE: Symbol("Idle"),
+    RUNNING: Symbol("Running"),
+    STOPPED: Symbol("Stopped")
+});
 
-var start = 0
-var end = 0
+const Signal = Object.freeze({
+    CONTINUE: Symbol("Continue"),
+    STOP: Symbol("Stop"),
+    TERMINATE: Symbol("Terminate")
+});
 
-var depth = 0;
-var stopped = false;
-
-function controlPressed()
+class StackCtx
 {
-	return new Promise((resolve, reject) => {
-		$(".control").click(function(){
-
-			stopped = false;
-
-			$(".control").unbind('click', this);
-			resolve((this.id == 'run'));
-		});
-	});
-}
-
-function depthdec()
-{
-	depth -= 1;
-}
-
-async function _check()
-{
-	if (stopped)
+	constructor()
 	{
-		killed = await controlPressed();
-		if (killed)
-		{
-			throw 'cleanup';
-		}
+		this.depth = 0;
+		this.state = State.IDLE;
+		this.pendingSignal = false;
+		this.genPromise();
+	}
 
-
-		return new Promise((resolve, reject) => {
-			setTimeout(resolve, 0);
+	genPromise()
+	{
+		let _this = this;
+		this.promise = new Promise(function(resolve) {
+			_this.resolve = resolve;
 		});
+	}
 
-	} else {
-
-		if (depth < 200)
+	signal(sig)
+	{
+		// We can't accept signals in an idle state.
+		if (this.state == State.IDLE)
 		{
-			depth += 1;
 			return;
 		}
 
-		depth = 0;
-		return new Promise((resolve, reject) => {
-			setTimeout(resolve, 0);
-		});
-	}
-}
-
-
-
-async function fapply(f, ...args) {
-	await _check();
-	return f(...args);
-}
-
-async function sum(x, acc) {
-	await _check();
-	if (x === 0) {
-		return acc;
-	} else {
-		return fapply(sum, x-1, acc + x);
-	}
-}
-
-function run()
-{
-
-	checkcall = esprima.parse('async function func() { await _check(); } ').body[0].body.body[0];
-	
-	let code = "async function _stub() { " + $('#code').val() + "} ";
-	parsed = esprima.parse(code, {tolerant: true}, function (node, meta) {
-		if (node.type == "FunctionDeclaration")
+		// Make this a queue?
+		if (this.pendingSignal != false)
 		{
-			node.async = true;
-			node.body.body.unshift(checkcall);
-		} else if (node.type == "CallExpression")
-		{
-			call = jQuery.extend(true, {}, node);
-
-			node.type = "AwaitExpression";
-			node.argument = call;
-
-			delete node["arguments"];
-			delete node["callee"];
-		} else if (node.type == "WhileStatement" || node.type == "DoWhileStatement")
-		{
-			if (node.body.body != undefined)
-			{
-				node.body.body.unshift(checkcall);
-			}
+			console.log('signal already pending');
+			return;
 		}
-	});
 
+		this.pendingSignal = sig;
+		this.resolve();
+		this.genPromise();
+	}
+
+
+	async awaitNextSignal()
+	{
+		await this.promise;
+		console.log('got signal');
+	}
+
+	async check()
+	{
+		if (this.pendingSignal != false)
+		{
+			while (this.pendingSignal == Signal.STOP)
+			{
+				this.pendingSignal = false;
+				this.state = State.STOPPED;
+
+				if (await this.awaitNextSignal()) {
+					this.pendingSignal = false;
+				}
+			}
+
+
+			let sig = this.pendingSignal;
+			this.pendingSignal = false;
+
+			if (sig == Signal.TERMINATE)
+			{
+				this.terminate()
+			}
+
+			if (sig == Signal.CONTINUE) {
+				this.state = State.RUNNING;
+			}
+		} else {
+
+			if (this.depth < 2000)
+			{
+				this.depth++;
+				return;
+			}
+
+			this.depth = 0;
+			return new Promise((resolve, reject) => {
+				setTimeout(resolve, 0);
+			});
+		}
+	}
+
+	terminate(unwindStack)
+	{
+		this.state = State.IDLE;
+		this.pendingSignal = false;
+
+		// Throw an exception to unwind the stack
+		if (unwindStack != false)
+		{
+			throw 'cleanup';
+		}
+	}
+
+	async run()
+	{	
+		if (this.state != State.IDLE)
+		{
+			console.log('already running, terminating current program');
+			this.signal(Signal.TERMINATE);
+
+			// Allow the stack to clear
+			await new Promise(function(resolve) {
+				setTimeout(resolve, 0);
+			});
+		}
+
+		this.state = State.RUNNING;
+
+		let checkcall = esprima.parse('async function func() { await _ctx.check(); } ').body[0].body.body[0];
 	
-	
+		let code = "async function _stub(_ctx) { " + $('#code').val() + "} ";
+		let parsed = esprima.parse(code, {tolerant: true}, function (node, meta) {
+			if (node.type == "FunctionDeclaration")
+			{
+				node.async = true;
+				node.body.body.unshift(checkcall);
+			} else if (node.type == "CallExpression")
+			{
+				let call = jQuery.extend(true, {}, node);
 
-	code = escodegen.generate(parsed);
+				node.type = "AwaitExpression";
+				node.argument = call;
 
+				delete node["arguments"];
+				delete node["callee"];
+			} else if (node.type == "WhileStatement" || node.type == "DoWhileStatement")
+			{
+				if (node.body.body != undefined)
+				{
+					node.body.body.unshift(checkcall);
+				}
+			}
+		});
+		
 
-	//code = code.replace('await,', 'await');
-	code += "setTimeout(_stub, 0);"
-	console.log(code);
-	eval(code);
-}
+		code = escodegen.generate(parsed);
 
+		code += "setTimeout(function() { _stub(_ctx) }, 0);";
+		console.log(code);
+		
+		let _this = this;
+		
+		await eval(code);
+		_this.terminate(false);
+	}
+};
 
 $(document).ready(function()
 {
+	_ctx = new StackCtx();
+
+	$('#run').click(function() {
+		_ctx.run();
+	});
 
 	$('#stop').click(function() {
-		stopped = true;
-		alert('stopped');
+		_ctx.signal(Signal.STOP);
 	})
 
-	$('#run').click(async function()
-	{
-		stopped = false;
-		try {
-			run();
-		} catch(e)
-		{
-			console.log(e);
-		}
+	$('#resume').click(function() {
+		_ctx.signal(Signal.CONTINUE);
 	});
 });
+
