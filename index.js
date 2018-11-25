@@ -127,7 +127,7 @@ class StackCtx
 	
 		let code = "async function _stub(_ctx) { " + $('#code').val() + "} ";
 		let parsed = esprima.parse(code, {tolerant: true}, function (node, meta) {
-			if (node.type == "FunctionDeclaration")
+			if (node.type == "FunctionDeclaration" || node.type == "FunctionExpression")
 			{
 				node.async = true;
 				node.body.body.unshift(checkcall);
