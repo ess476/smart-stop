@@ -109,7 +109,7 @@ class StackCtx
 		}
 	}
 
-	async run()
+	async run(code)
 	{	
 		if (this.state != State.IDLE)
 		{
@@ -129,7 +129,7 @@ class StackCtx
 
 		let checkcall = esprima.parse('async function func() { await _ctx.check(); } ').body[0].body.body[0];
 	
-		let code = "async function _stub(_ctx) { " + $('#code').val() + "} ";
+		code = "async function _stub(_ctx) { " + code + "} ";
 		let parsed = esprima.parse(code, {tolerant: true}, function (node, meta) {
 			if (node.type == "FunctionDeclaration" || node.type == "FunctionExpression")
 			{
@@ -170,7 +170,7 @@ $(document).ready(function()
 	_ctx = new StackCtx();
 
 	$('#run').click(function() {
-		_ctx.run();
+		_ctx.run($('#code').val());
 	});
 
 	$('#stop').click(function() {
